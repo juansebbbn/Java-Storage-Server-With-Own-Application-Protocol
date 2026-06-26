@@ -1,43 +1,174 @@
-PROYECTO JCLOUD
-J-Cloud: Secure Binary Object Storage
+# J-Cloud - Secure Binary Object Storage
 
-J-Cloud es un sistema de almacenamiento de objetos binarios diseñado para simular el comportamiento de servicios como Amazon S3, priorizando la seguridad y la eficiencia mediante un protocolo de comunicación propietario en la capa de aplicación. El sistema no solo almacena datos, sino que garantiza su privacidad mediante un flujo de recepción, cifrado y persistencia controlada.
+J-Cloud is a binary object storage system designed to simulate the behavior of cloud storage services such as Amazon S3 while prioritizing security and efficiency through a custom application-layer communication protocol.
 
+Unlike traditional REST-based storage services, J-Cloud communicates using a proprietary binary protocol instead of HTTP, significantly reducing the attack surface and allowing only compliant clients to interact with the server.
 
-Filosofía del Proyecto:
+---
 
-La motivación principal de J-Cloud es la implementación de un protocolo de comunicación personalizado que prescinde de HTTP. Al evitar los estándares web tradicionales, el sistema reduce drásticamente la superficie de ataque frente a vulnerabilidades comunes (como inyecciones de headers o ataques de denegación de servicio específicos de HTTP). Solo los clientes que implementen la estructura exacta de la trama de bytes pueden interactuar con el servidor, estableciendo una capa de seguridad por diseño.
-Especificación del Protocolo (Binary Frame)
+# Project Philosophy
 
-Para que el sistema procese una solicitud, el cliente debe transmitir una trama de bytes con un formato estricto. Cualquier desviación en esta estructura resulta en el rechazo inmediato de la conexión por parte del servidor.
-Estructura de la Trama:
+The primary goal of J-Cloud is to demonstrate how a custom communication protocol can improve security by eliminating dependencies on traditional web protocols.
 
-    Operation ID (1 byte): Identifica la acción solicitada (ej. 0x01 para Upload, 0x02 para Download).
+By avoiding HTTP entirely, the system is naturally protected against many common web attacks, including:
 
-    User ID (4 bytes): Identificador único del usuario que realiza la operación.
+* HTTP Header Injection
+* HTTP-specific Denial of Service attacks
+* Malformed HTTP requests
+* Web framework exploits
 
-    File Size (8 bytes): Tamaño total del contenido del archivo en bytes.
+Only clients capable of generating the exact binary frame expected by the server can establish successful communication, providing **security by design**.
 
-    Name Size (4 bytes): Longitud del nombre del archivo.
+---
 
-    File Name (Variable): Cadena de caracteres que representa el nombre del objeto.
+# Binary Communication Protocol
 
-    Payload (Variable): El cuerpo del archivo a encriptar y almacenar.
+Every request sent to the server must strictly follow the binary frame specification below.
 
+Any malformed packet is immediately rejected and the connection is terminated.
 
-Arquitectura del Sistema:
+## Frame Structure
 
-El proyecto se organiza en dos módulos principales que separan la lógica de procesamiento de la visualización:
-1. Módulo Core (Server-Side)
+| Field        | Size     | Description                                               |
+| ------------ | -------- | --------------------------------------------------------- |
+| Operation ID | 1 byte   | Requested operation (e.g. `0x01` Upload, `0x02` Download) |
+| User ID      | 4 bytes  | Unique identifier of the client                           |
+| File Size    | 8 bytes  | Total size of the file in bytes                           |
+| Name Size    | 4 bytes  | Length of the filename                                    |
+| File Name    | Variable | Object name                                               |
+| Payload      | Variable | Binary file content                                       |
 
-Es el motor principal encargado de la escucha y procesamiento de peticiones. Se subdivide en tres componentes internos:
+---
 
-    Entidad Receptora (ServerSocket): Gestiona las conexiones TCP entrantes y valida la integridad inicial de la trama.
+# System Architecture
 
-    Servicio de Encriptación: Aplica algoritmos de cifrado al payload antes de su escritura en disco, asegurando que los datos en reposo sean inaccesibles sin las llaves correspondientes.
+The project is divided into two independent modules.
 
-    Servicio de Almacenamiento: Administra la persistencia física de los objetos binarios en el sistema de archivos del servidor.
+## Core Module (Server)
 
-2. Módulo de Visualización (Dashboard)
+The Core Module is responsible for accepting client connections, validating requests, encrypting data, and persisting objects.
 
-Un componente secundario encargado de auditar la carpeta de almacenamiento. Este módulo actúa como un lector independiente que permite visualizar de forma gráfica los objetos gestionados por el proceso principal, facilitando el control sobre el estado del repositorio.
+### Components
+
+### Connection Receiver
+
+Responsible for:
+
+* Listening for incoming TCP connections
+* Receiving binary frames
+* Validating packet integrity
+* Rejecting malformed requests
+
+---
+
+### Encryption Service
+
+Responsible for:
+
+* Encrypting every uploaded payload
+* Protecting data at rest
+* Ensuring stored objects cannot be read without the corresponding encryption keys
+
+---
+
+### Storage Service
+
+Responsible for:
+
+* Persisting encrypted objects
+* Managing the server file repository
+* Retrieving stored files
+
+---
+
+# Dashboard Module
+
+The Dashboard is an independent visualization component.
+
+Instead of communicating directly with clients, it monitors the storage directory and provides a graphical overview of the stored objects.
+
+Its main purpose is repository auditing and storage monitoring.
+
+---
+
+# Project Architecture
+
+```text id="h7lqvh"
+J-Cloud/
+
+├── core/
+│   ├── networking/
+│   │   └── TCP Server
+│   ├── protocol/
+│   │   └── Binary Frame Parser
+│   ├── encryption/
+│   │   └── Encryption Service
+│   ├── storage/
+│   │   └── Storage Service
+│   └── repository/
+│
+├── dashboard/
+│   └── Storage Viewer
+│
+└── README.md
+```
+
+---
+
+# Features
+
+* Custom binary application-layer protocol
+* HTTP-free architecture
+* Secure binary object storage
+* Payload encryption before persistence
+* TCP-based communication
+* Strict packet validation
+* Modular architecture
+* Independent storage dashboard
+* Server-side object management
+
+---
+
+# How It Works
+
+1. A client establishes a TCP connection.
+2. The client sends a binary frame following the protocol specification.
+3. The server validates the frame.
+4. The payload is encrypted.
+5. The encrypted object is stored on disk.
+6. The Dashboard automatically detects and displays the new object.
+
+---
+
+# Technologies
+
+* Java
+* TCP Sockets
+* Java NIO / IO
+* Custom Binary Protocol
+* Cryptography APIs
+* Multi-threading
+
+---
+
+# Future Improvements
+
+* User authentication
+* Object metadata indexing
+* Folder support
+* Distributed storage nodes
+* Compression before encryption
+* File versioning
+* Access Control Lists (ACL)
+* Web administration panel
+* Automatic key rotation
+
+---
+
+# Author
+
+**Juan**
+
+## Version
+
+**1.0.0**
